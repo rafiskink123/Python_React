@@ -1,0 +1,151 @@
+// First of all we need to create a folder structure as a basic for this solution. In a machine create a folder as following.,
+
+$ mkdir progress-upload-example
+$ cd progress-upload-example
+$ mkdir server
+
+// Now we need to install the dependencies for backend purpose
+
+$ cd server
+$ touch server.js
+$ npm init -y
+$ npm i express multer cors
+
+// Now we can create the frontend setup on a new terminal machine.
+
+$ npx create-react-app client
+$ cd client
+$ npm i redux react-redux redux-thunk axios lodash
+$ npm start
+
+//Now its time to create the folder structure for the progress component like
+//  ../src/components/UploadProgress/UploadProgres.js/UploadProgress.module.css/UploadItem/UploadItem.js/UploadItem.module.css
+
+
+// Here in App.js we have to call the UploadProgress component to accomplish our task finally..
+
+.
+import React, { useEffect } from 'react'
+import UploadProgress from './components/UploadProgress/UploadProgress'
+.
+.
+return (
+  <div className="App">
+    <header className="App-header">
+      <img src={logo} className="App-logo" alt="logo" />
+      <input type="file" multiple onChange={handleAttachFIle} />
+    </header>
+    <UploadProgress /> // --> call the component here
+  </div>
+)
+
+// Let's set the progress incrementing feature here.
+
+SET_UPLOAD_PROGRESS: 'SET_UPLOAD_PROGRESS',
+SUCCESS_UPLOAD_FILE: 'SUCCESS_UPLOAD_FILE',
+FAILURE_UPLOAD_FILE: 'FAILURE_UPLOAD_FILE',
+
+case uploadFileTypes.SET_UPLOAD_PROGRESS:
+  return {
+    ...state,
+    fileProgress: {
+      ...state.fileProgress,
+      [action.payload.id]: {
+        ...state.fileProgress[action.payload.id],
+        progress: action.payload.progress,
+      },
+    },
+  }
+
+case uploadFileTypes.SUCCESS_UPLOAD_FILE:
+  return {
+    ...state,
+    fileProgress: {
+      ...state.fileProgress,
+      [action.payload]: {
+        ...state.fileProgress[action.payload],
+        status: 1,
+      },
+    },
+  }
+
+case uploadFileTypes.FAILURE_UPLOAD_FILE:
+  return {
+    ...state,
+    fileProgress: {
+      ...state.fileProgress,
+      [action.payload]: {
+        ...state.fileProgress[action.payload],
+        status: 0,
+        progress: 0,
+      },
+    },
+  }
+
+export const setUploadProgress = (id, progress) => ({
+  type: uploadFileTypes.SET_UPLOAD_PROGRESS,
+  payload: {
+    id,
+    progress,
+  },
+})
+
+export const successUploadFile = id => ({
+  type: uploadFileTypes.SUCCESS_UPLOAD_FILE,
+  payload: id,
+})
+
+export const failureUploadFile = id => ({
+  type: uploadFileTypes.FAILURE_UPLOAD_FILE,
+  payload: id,
+})
+
+export const uploadFile = files => dispatch => {
+  if (files.length) {
+    files.forEach(async file => {
+      const formPayload = new FormData()
+      formPayload.append('file', file.file)
+      try {
+        await axios({
+          baseURL: 'http://localhost:5000',
+          url: '/file',
+          method: 'post',
+          data: formPayload,
+          onUploadProgress: progress => {
+            const { loaded, total } = progress
+            const percentageProgress = Math.floor((loaded/total) * 100)
+            dispatch(setUploadProgress(file.id, percentageProgress))
+          },
+        })
+        dispatch(successUploadFile(file.id))
+      } catch (error) {
+        dispatch(failureUploadFile(file.id))
+      }
+    })
+  }
+}
+
+const { fileProgress, uploadFile } = props
+const uploadedFileAmount = size(fileProgress)
+
+useEffect(() => {
+  const fileToUpload = toArray(fileProgress).filter(file =>    file.progress === 0)
+  uploadFile(fileToUpload)
+}, [uploadedFileAmount])
+...
+...
+
+const mapDispatchToProps = dispatch => ({
+  uploadFile: files => dispatch(uploadFile(files)),
+})
+
+export default connect(mapStateToProps, mapDispatchToProps)(UploadProgress)
+
+//  ----- End ----- by this we can observe the progress component while we upload the file in the User Interface in Reactjs.
+
+
+
+
+
+
+
